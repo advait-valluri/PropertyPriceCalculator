@@ -4,11 +4,11 @@ function [rates,currencies,rates_struct] = exchangerate(base,curr,date)
 % using their API. To work correctly, one must be connected to the
 % Internet. The default app_id is from a free account to
 % openexchangerates.org, which has a limit of 1000 API requests/month. For
-% more flexibility, sign up for your own free or paid account and replace 
-% the app_id value with your own id number. 
+% more flexibility, sign up for your own free or paid account and replace
+% the app_id value with your own id number.
 
 % Inputs:
-% 1) base: a string denoting the base currency, which is set to have a 
+% 1) base: a string denoting the base currency, which is set to have a
 % value of 1. If an empty string '' is provided, the default 'USD' is used.
 % See list of valid currency abbreviations below.
 % 2) curr: a string or cell array of strings denoting the currency
@@ -25,7 +25,7 @@ function [rates,currencies,rates_struct] = exchangerate(base,curr,date)
 % 1) rates: a number or vector indicating the exchange rate(s) between the
 % desired currency (currencies), curr, and the base currency, base.
 % 2) currencies: a cell array of the corresponding currency abbreviations
-% in rates. 
+% in rates.
 % 3) rate_struct: a structure with field names equal to the currency
 % abbreviations and associated values being the rates. This output just
 % combines rates and currencies for convenience.
@@ -35,25 +35,25 @@ function [rates,currencies,rates_struct] = exchangerate(base,curr,date)
 % [rates,currencies,rates_struct] = exchangerate('USD','BTC');
 % >> rates = 1.614e-3
 % >> currencies = 'BTC'
-% >> rates_struct = 
+% >> rates_struct =
 %        BTC: 1.614e-3
-% 
+%
 % 2) gets latest exchange rates for all available currencies
-% [rates,currencies,rates_struct] = exchangerate(); 
+% [rates,currencies,rates_struct] = exchangerate();
 %
 % 3) Obtain exchange rates for Bitcoin, Indian rupee, and Euro using the US
 % Dollar as base currency on June 5, 2013
 % [rates,currencies,rates_struct] = exchangerate('USD',{'BTC','INR','EUR'},'2013-06-05');
 % >> rates = [8.246e-3; 5.672e1; 7.642e-1]
 % >> currencies = {'BTC';'INR';'EUR'}
-% >> rates_struct = 
+% >> rates_struct =
 %       BTC: 8.246e-3
 %       INR: 5.672e1
 %       EUR: 7.642e-1
 %
 % 4) Obtain exchange rates for all available currencies on June 14, 2014
 % [rates,currencies,rates_struct] = exchangerate('USD','all','2014-07-14');
-% 
+%
 %
 % List of Currency Abbreviations (as of 7-16-2014)
 %   "AED": "United Arab Emirates Dirham",
@@ -64,7 +64,7 @@ function [rates,currencies,rates_struct] = exchangerate(base,curr,date)
 % 	"AOA": "Angolan Kwanza",
 % 	"ARS": "Argentine Peso",
 % 	"AUD": "Australian Dollar",
-% 	"AWG": "Aruban Florin", 
+% 	"AWG": "Aruban Florin",
 % 	"AZN": "Azerbaijani Manat",
 % 	"BAM": "Bosnia-Herzegovina Convertible Mark",
 % 	"BBD": "Barbadian Dollar",
@@ -239,7 +239,7 @@ end
 
 if nargin < 3 || isequal(date,'')
     date = 'latest';
-elseif ~isequal(date,'latest') 
+elseif ~isequal(date,'latest')
     %check simple mistakes in format and date range
     startIndex = regexp(date,'[12][019][0-9][0-9]-[01][0-9]-[0-3][0-9]', 'once');
     if isempty(startIndex)
@@ -253,7 +253,7 @@ end
 url_request = strcat('http://openexchangerates.org/api/',date,...
     '.json?app_id=',app_id);
 
-data = parse_json(urlread(url_request));
+data = parse_json(urlread(url_request)); %#ok<URLRD>
 all_rates = data{1}.rates;
 %convert structure to array
 all_names = fieldnames(all_rates); %a cell array of currency abbreviations
@@ -281,7 +281,7 @@ if isequal(curr,'all') || isequal(curr,'')
 else
     if iscell(curr)
         curr_indices = zeros(length(curr),1);
-        for i = 1:1:length(curr) 
+        for i = 1:1:length(curr)
             [curr_member,curr_index] = ismember(curr{i},all_names);
             if ~curr_member
                 error(strcat(curr{i},' is not a valid currency abbreviation.'));
@@ -318,175 +318,175 @@ function [data, json] = parse_json(json)
 % disp(matlab_results{1}.responseData.results{1}.titleNoFormatting)
 % disp(matlab_results{1}.responseData.results{1}.visibleUrl)
 
-    data = cell(0,1);
+data = cell(0,1);
 
-    while ~isempty(json)
-        [value, json] = parse_value(json);
-        data{end+1} = value; %#ok<AGROW>
-    end
+while ~isempty(json)
+    [value, json] = parse_value(json);
+    data{end+1} = value; %#ok<AGROW>
+end
 end
 
 function [value, json] = parse_value(json)
-    value = [];
-    if ~isempty(json)
-        id = json(1);
-        json(1) = [];
-        
-        json = strtrim(json);
-        
-        switch lower(id)
-            case '"'
-                [value json] = parse_string(json);
-                
-            case '{'
-                [value json] = parse_object(json);
-                
-            case '['
-                [value json] = parse_array(json);
-                
-            case 't'
-                value = true;
-                if (length(json) >= 3)
-                    json(1:3) = [];
-                else
-                    ME = MException('json:parse_value',['Invalid TRUE identifier: ' id json]);
-                    ME.throw;
-                end
-                
-            case 'f'
-                value = false;
-                if (length(json) >= 4)
-                    json(1:4) = [];
-                else
-                    ME = MException('json:parse_value',['Invalid FALSE identifier: ' id json]);
-                    ME.throw;
-                end
-                
-            case 'n'
-                value = [];
-                if (length(json) >= 3)
-                    json(1:3) = [];
-                else
-                    ME = MException('json:parse_value',['Invalid NULL identifier: ' id json]);
-                    ME.throw;
-                end
-                
-            otherwise
-                [value json] = parse_number([id json]); % Need to put the id back on the string
-        end
+value = [];
+if ~isempty(json)
+    id = json(1);
+    json(1) = [];
+
+    json = strtrim(json);
+
+    switch lower(id)
+        case '"'
+            [value,json] = parse_string(json);
+
+        case '{'
+            [value,json] = parse_object(json);
+
+        case '['
+            [value,json] = parse_array(json);
+
+        case 't'
+            value = true;
+            if (length(json) >= 3)
+                json(1:3) = [];
+            else
+                ME = MException('json:parse_value',['Invalid TRUE identifier: ' id json]);
+                ME.throw;
+            end
+
+        case 'f'
+            value = false;
+            if (length(json) >= 4)
+                json(1:4) = [];
+            else
+                ME = MException('json:parse_value',['Invalid FALSE identifier: ' id json]);
+                ME.throw;
+            end
+
+        case 'n'
+            value = [];
+            if (length(json) >= 3)
+                json(1:3) = [];
+            else
+                ME = MException('json:parse_value',['Invalid NULL identifier: ' id json]);
+                ME.throw;
+            end
+
+        otherwise
+            [value,json] = parse_number([id json]); % Need to put the id back on the string
     end
 end
+end
 
-function [data json] = parse_array(json)
-    data = cell(0,1);
-    while ~isempty(json)
-        if strcmp(json(1),']') % Check if the array is closed
-            json(1) = [];
+function [data,json] = parse_array(json)
+data = cell(0,1);
+while ~isempty(json)
+    if strcmp(json(1),']') % Check if the array is closed
+        json(1) = [];
+        return
+    end
+
+    [value,json] = parse_value(json);
+
+    if isempty(value)
+        ME = MException('json:parse_array',['Parsed an empty value: ' json]);
+        ME.throw;
+    end
+    data{end+1} = value; %#ok<AGROW>
+
+    while ~isempty(json) && ~isempty(regexp(json(1),'[\s,]','once'))
+        json(1) = [];
+    end
+end
+end
+
+function [data,json] = parse_object(json)
+data = [];
+while ~isempty(json)
+    id = json(1);
+    json(1) = [];
+
+    switch id
+        case '"' % Start a name/value pair
+            [name,value,remaining_json] = parse_name_value(json);
+            if isempty(name)
+                ME = MException('json:parse_object',['Can not have an empty name: ' json]);
+                ME.throw;
+            end
+            data.(name) = value;
+            json = remaining_json;
+
+        case '}' % End of object, so exit the function
             return
-        end
-        
-        [value json] = parse_value(json);
-        
-        if isempty(value)
-            ME = MException('json:parse_array',['Parsed an empty value: ' json]);
-            ME.throw;
-        end
-        data{end+1} = value; %#ok<AGROW>
-        
-        while ~isempty(json) && ~isempty(regexp(json(1),'[\s,]','once'))
-            json(1) = [];
-        end
+
+        otherwise % Ignore other characters
     end
 end
+end
 
-function [data json] = parse_object(json)
-    data = [];
-    while ~isempty(json)
-        id = json(1);
+function [name,value,json] = parse_name_value(json)
+name = [];
+value = [];
+if ~isempty(json)
+    [name,json] = parse_string(json);
+
+    % Skip spaces and the : separator
+    while ~isempty(json) && ~isempty(regexp(json(1),'[\s:]','once'))
         json(1) = [];
-        
-        switch id
-            case '"' % Start a name/value pair
-                [name value remaining_json] = parse_name_value(json);
-                if isempty(name)
-                    ME = MException('json:parse_object',['Can not have an empty name: ' json]);
-                    ME.throw;
+    end
+    [value,json] = parse_value(json);
+end
+end
+
+function [string,json] = parse_string(json)
+string = [];
+while ~isempty(json)
+    letter = json(1);
+    json(1) = [];
+
+    switch lower(letter)
+        case '\' % Deal with escaped characters
+            if ~isempty(json)
+                code = json(1);
+                json(1) = [];
+                switch lower(code)
+                    case '"'
+                        new_char = '"';
+                    case '\'
+                        new_char = '\';
+                    case '/'
+                        new_char = '/';
+                    case {'b' 'f' 'n' 'r' 't'}
+                        new_char = sprintf('\%c',code);
+                    case 'u'
+                        if length(json) >= 4
+                            new_char = sprintf('\\u%s',json(1:4));
+                            json(1:4) = [];
+                        end
+                    otherwise
+                        new_char = [];
                 end
-                data.(name) = value;
-                json = remaining_json;
-                
-            case '}' % End of object, so exit the function
-                return
-                
-            otherwise % Ignore other characters
-        end
+            end
+
+        case '"' % Done with the string
+            return
+
+        otherwise
+            new_char = letter;
     end
+    % Append the new character
+    string = [string new_char]; %#ok<AGROW>
+end
 end
 
-function [name value json] = parse_name_value(json)
-    name = [];
-    value = [];
-    if ~isempty(json)
-        [name json] = parse_string(json);
-        
-        % Skip spaces and the : separator
-        while ~isempty(json) && ~isempty(regexp(json(1),'[\s:]','once'))
-            json(1) = [];
-        end
-        [value json] = parse_value(json);
+function [num,json] = parse_number(json)
+num = [];
+if ~isempty(json)
+    % Validate the floating point number using a regular expression
+    [s,e] = regexp(json,'^[\w]?[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?[\w]?','once');
+    if ~isempty(s)
+        num_str = json(s:e);
+        json(s:e) = [];
+        num = str2double(strtrim(num_str));
     end
 end
-
-function [string json] = parse_string(json)
-    string = [];
-    while ~isempty(json)
-        letter = json(1);
-        json(1) = [];
-        
-        switch lower(letter)
-            case '\' % Deal with escaped characters
-                if ~isempty(json)
-                    code = json(1);
-                    json(1) = [];
-                    switch lower(code)
-                        case '"'
-                            new_char = '"';
-                        case '\'
-                            new_char = '\';
-                        case '/'
-                            new_char = '/';
-                        case {'b' 'f' 'n' 'r' 't'}
-                            new_char = sprintf('\%c',code);
-                        case 'u'
-                            if length(json) >= 4
-                                new_char = sprintf('\\u%s',json(1:4));
-                                json(1:4) = [];
-                            end
-                        otherwise
-                            new_char = [];
-                    end
-                end
-                
-            case '"' % Done with the string
-                return
-                
-            otherwise
-                new_char = letter;
-        end
-        % Append the new character
-        string = [string new_char]; %#ok<AGROW>
-    end
-end
-
-function [num json] = parse_number(json)
-    num = [];
-	if ~isempty(json)
-        % Validate the floating point number using a regular expression
-        [s e] = regexp(json,'^[\w]?[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?[\w]?','once');
-        if ~isempty(s)
-            num_str = json(s:e);
-            json(s:e) = [];
-            num = str2double(strtrim(num_str));
-        end
-    end
 end
